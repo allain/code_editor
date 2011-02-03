@@ -1,0 +1,58 @@
+.CodeMirror-wrapping {
+  border: 1px solid black;
+  clear: both;
+}
+
+.CodeMirror-line-numbers {
+  background-color: #eee;  
+  border-right: 1px solid #000;
+  font-size: 10pt;
+  font-family: monospace;
+}
+
+#edit-code-wrapper label {
+  display: none; 
+}
+
+.js-string {
+ font-weight: bold; 
+}
+
+span.js-keyword {
+ font-weight: bold; 
+}
+
+td.action {
+  width: 3em;
+}
+
+#code-editor-create-file-form {
+  margin-top: 2em; 
+}
+
+#code-editor-create-directory-form {
+  margin-top: 1em; 
+}
+
+#code-editor-edit-form .form-submit {
+  margin: 0 !important;  
+  float: right; 
+  padding: 6px;
+}
+
+.messages {
+ float: left;
+ width: 80%; 
+}
+
+#code-editor-create-file-form label,
+#code-editor-create-file-form div, 
+#code-editor-create-file-form .form-submit, 
+#code-editor-create-file-form .form-button,
+#code-editor-create-directory-form label,
+#code-editor-create-directory-form div, 
+#code-editor-create-directory-form .form-submit, 
+#code-editor-create-directory-form .form-button {
+  display: inline;
+  margin-top: 0;
+} 

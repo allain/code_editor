@@ -1,0 +1,321 @@
+<?php
+  
+  define('EDIT_CODE_PATH', 'admin/build/edit-code');
+  
+  function code_editor_perm() {
+    return array('edit code'); 
+  }
+  
+  function code_editor_menu() {
+    $items = array();
+    
+    $items[EDIT_CODE_PATH] = array(
+      'title' => 'Edit Code',
+      'page callback' => 'code_editor_edit',
+      'access callback' => 'user_access',
+      'access arguments' => array('edit code'),
+      'type' => MENU_NORMAL,        
+    );    
+    
+    return $items;
+  }
+  
+  function code_editor_edit() {
+    $edit_file_path = _code_editor_requested_file_path();
+    
+    if (!file_exists($edit_file_path)) {
+      return drupal_not_found(); 
+    }
+    
+    
+
+    drupal_add_css(drupal_get_path('module', 'code_editor') . '/code_editor.css');
+    drupal_add_js(drupal_get_path('module', 'code_editor') . '/code_editor.js');
+    
+    if (is_dir($edit_file_path)) {    
+      $listing = _code_editor_render_directory_listing($edit_file_path);
+      $breadcrumb = _code_editor_render_path_breadcrumb($edit_file_path);
+      return $breadcrumb .
+        drupal_get_form('code_editor_create_file_form') .
+        drupal_get_form('code_editor_create_directory_form') .
+        $listing;
+    } else {
+      drupal_set_title(basename($edit_file_path));
+      
+      $content = file_get_contents($edit_file_path);
+      
+      return drupal_get_form('code_editor_edit_form');
+    }
+  }
+  
+  function code_editor_edit_form() {
+    $module_path = '/' . drupal_get_path('module', 'code_editor') .'/';
+    $edit_file_path = _code_editor_requested_file_path();
+    
+    $code = file_get_contents($edit_file_path);
+    
+    $form['submit'] = array(
+      '#type' => 'submit',
+      '#value' => t('Save Changes')
+    );
+    
+    $form['code'] = array(
+      '#title' => 'Code',
+      '#type' => 'textarea',
+      '#default_value' => $code
+    );   
+    
+    $form['syntax'] = array(
+      '#value' => _code_editor_build_javascript_footer($edit_file_path)
+    );    
+    
+    return $form;
+  } 
+  
+  function code_editor_edit_form_submit($form, $form_state) {
+    $edit_file_path = _code_editor_requested_file_path(); 
+    
+    $new_code = $form_state['values']['code'];
+    
+    if (!file_exists($edit_file_path)) {
+      drupal_set_message('Unable to save changes: <strong>file is missing</strong>.', 'error');
+      return;
+    }
+    
+    if (!is_writable($edit_file_path)) {
+      drupal_set_message('Unable to save changes: <strong>file is read only.</strong>', 'error');
+      return;
+    }
+    
+    if (file_put_contents($edit_file_path, $new_code) === FALSE) {
+      drupal_set_message('An error occured while writing to the file.', 'error');
+      return;
+    }
+    
+    drupal_set_message('Saved Changes');  
+  }
+  
+  function code_editor_create_file_form() {
+    $form['filename'] = array(
+      '#type' => 'textfield',
+      '#title' => 'File Name',
+      '#requited' => TRUE
+    );
+    
+    $form['create'] = array(
+      '#type' => 'submit',
+      '#value' => 'Create File' 
+    );
+    
+    return $form;
+  }
+  
+  function code_editor_create_file_form_validate($form, &$form_state) {
+    $requested_path = rtrim(_code_editor_requested_file_path(), '/');
+    
+    $filename = $form_state['values']['filename'];
+    if (file_exists("$requested_path/$filename")) {    
+      form_set_error('', t('File already exists'));
+    }
+  }
+  
+  function code_editor_create_file_form_submit($form, &$form_state) {
+    $requested_path = rtrim(_code_editor_requested_file_path(), '/');
+    
+    $filename = $form_state['values']['filename'];
+    
+    if (file_put_contents("$requested_path/$filename", '') === FALSE) {
+      form_set_error('', t('Could not create file'));      
+    } else {
+      drupal_set_message(t('File created.'));
+    }
+  }
+  
+  function code_editor_create_directory_form() {
+    $form['dirname'] = array(
+      '#type' => 'textfield',
+      '#title' => 'Directory Name',
+      '#requited' => TRUE
+    );
+    
+    $form['create'] = array(
+      '#type' => 'submit',
+      '#value' => 'Create Directory' 
+    );
+    
+    return $form;
+  }
+  
+  function code_editor_create_directory_form_validate($form, &$form_state) {
+    $requested_path = rtrim(_code_editor_requested_file_path(), '/');
+    
+    $filename = $form_state['values']['dirname'];
+    if (file_exists("$requested_path/$filename")) {    
+      form_set_error('', t('Directory already exists'));
+    }
+  }
+  
+  function code_editor_create_directory_form_submit($form, &$form_state) {
+    $requested_path = rtrim(_code_editor_requested_file_path(), '/');
+    
+    $filename = $form_state['values']['dirname'];
+    
+    mkdir("$requested_path/$filename");
+    if (!file_exists("$requested_path/$filename")) {
+      form_set_error('', t('Could not create directory'));      
+    } else {
+      drupal_set_message(t('Directory created.'));
+    }
+  }
+  
+  function _code_editor_requested_file_path() {
+    $request_uri = request_uri();
+    if (preg_match('#^/(en|fr)/#', $request_uri)) {
+      $request_uri = substr($request_uri, 3);
+    }
+    
+    if (strpos($request_uri, '/' . EDIT_CODE_PATH) !== 0) {
+      return null;
+    }
+    
+    $request_uri = substr($request_uri, strlen(EDIT_CODE_PATH) + 1);
+    if (strpos($request_uri, '?') !== FALSE) {
+      $request_uri = substr($request_uri, 0, strpos($request_uri, '?')); 
+    }
+    
+    $edit_file_path = './' . $request_uri;  
+    
+    return $edit_file_path;
+  }
+  
+  function _code_editor_build_javascript_footer($edit_file_path) {
+    $module_path = '/' . drupal_get_path('module', 'code_editor') .'/';    
+    
+    $language_config = array(
+      '#\.(php|inc|module|install|info)$#' => array(
+        'parsefile' => array(
+          'parsexml.js', 
+          'parsecss.js', 
+          'tokenizejavascript.js', 
+          'parsejavascript.js',
+          '../contrib/php/js/tokenizephp.js', 
+          '../contrib/php/js/parsephp.js',
+          '../contrib/php/js/parsephphtmlmixed.js'),
+        'stylesheet' => array(
+          'codemirror/css/xmlcolors.css', 
+          'codemirror/css/jscolors.css',
+          'codemirror/css/csscolors.css',
+          'codemirror/contrib/php/css/phpcolors.css',
+          'code_editor.css')
+      ),
+      
+      '#\.css$#' => array(
+        'parsefile' => array('parsecss.js'),
+        'stylesheet' => array(
+          'codemirror/css/csscolors.css',
+          'code_editor.css')
+      ),
+      
+      '#\.js$#' => array(
+        'parsefile' => array(
+          'tokenizejavascript.js',
+          'parsejavascript.js'),
+        'stylesheet' => array(
+          'codemirror/css/jscolors.css',
+          'code_editor.css')
+      )
+    );
+    
+    $js_footer[] = '<script src="' . $module_path . '/codemirror/js/codemirror.js" type="text/javascript"></script>';
+    $js_footer[] = '<script type="text/javascript">';
+    
+    foreach ($language_config as $filename_regex => $properties) {
+      if (preg_match($filename_regex , $edit_file_path)) {
+        $js_footer[] = 'var editor = CodeMirror.fromTextArea($("textarea[name=code]").get(0), {';
+        $js_footer[] = '  height: "500px",';
+        $js_footer[] = '  parserfile: ["' . join('","', $properties['parsefile']) . '"], ';
+        $js_footer[] = '  stylesheet: ["' . $module_path . join('","' . $module_path, $properties['stylesheet']) . '"], ';
+        $js_footer[] = '  path: "' . $module_path . 'codemirror/js/",';
+        $js_footer[] = '  continuousScanning: 500,';
+        // TODO: Make line numbers match
+        //$js_footer[] = '  lineNumbers: true';
+        $js_footer[] = '});';
+        
+        break;
+      }
+    }    
+    $js_footer[] = '</script>'; 
+    
+    return join("\n", $js_footer);
+  }
+  
+  function _code_editor_render_path_breadcrumb($directory_path) {
+    ob_start();
+    ?>
+<h1><?php 
+    $parts = split('/', trim($directory_path, '/'));
+    $cumulative_path = EDIT_CODE_PATH . '/';
+    foreach ($parts as $index => $part) {
+      if ($index == 0) {
+        echo l('ROOT', EDIT_CODE_PATH);
+        echo '/';
+      } elseif ($part) {
+        $cumulative_path .= $part. '/';
+        echo l($part, $cumulative_path);
+        echo '/';
+      }
+      
+    }    
+    ?></h1> 
+<?php
+    return ob_get_clean();
+  }
+  
+  function _code_editor_render_directory_listing($directory_path) {
+    if (substr($directory_path, './') === FALSE) {
+      return 'invalid directory'; 
+    }        
+    
+    $url_path = url(EDIT_CODE_PATH. substr($directory_path, 2));
+    $url_path = rtrim($url_path, '/');
+    if ($directory_path === './') {
+      $parent_url_path = FALSE;
+    } else {
+      $parent_url_path = url(EDIT_CODE_PATH. dirname(substr($directory_path, 2)));
+    }
+    
+    ob_start();?>    
+
+<table class="directory-listing">
+  <thead>
+    <tr>         
+      <th>Filename</th>  
+      <th>Last Modified</th>        
+    </tr>
+  </thead>
+  <tbody>
+    <?php 
+    $ignore = array( 'cgi-bin', '.', '..', '.svn'); 
+    
+    $files = scandir($directory_path);
+    foreach ($files as $file) {
+      if (in_array($file, $ignore)) continue;
+      
+      if (is_dir("$directory_path/$file")) {
+        echo '<tr class="dir">';         
+        echo "<td class='path'><a href='$url_path/$file'><strong>$file</strong></a></td>";   
+        echo "<td class='mtime'>&nbsp;</td>";                
+        echo '</tr>';
+      } else {
+        echo '<tr class="file">';        
+        echo "<td class='path'><a href='$url_path/$file' target='_blank'>$file</a></td>"; 
+        echo "<td class='mtime'>" . date('Y-m-d H:i:s', filemtime("$directory_path/$file")) . "</td>";        
+        echo '</tr>';
+      }
+    } 
+    ?>
+  </tbody>      
+</table>    
+<?php
+    return ob_get_clean();
+  }

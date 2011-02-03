@@ -1,0 +1,6 @@
+core = "6.x"
+dependencies[] = "features"
+description = "Code Editor based on the codemirror.net syntax highlighting editor"
+features[user_permission][] = "edit code"
+name = "Code Editor"
+package = "Features"
