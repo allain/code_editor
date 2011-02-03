@@ -226,7 +226,7 @@
       )
     );
     
-    $js_footer[] = '<script src="' . $module_path . '/codemirror/js/codemirror.js" type="text/javascript"></script>';
+    $js_footer[] = '<script src="' . $module_path . 'codemirror/js/codemirror.js" type="text/javascript"></script>';
     $js_footer[] = '<script type="text/javascript">';
     
     foreach ($language_config as $filename_regex => $properties) {
