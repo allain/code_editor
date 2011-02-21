@@ -188,11 +188,9 @@
     return $edit_file_path;
   }
   
-  function _code_editor_build_javascript_footer($edit_file_path) {
-    $module_path = '/' . drupal_get_path('module', 'code_editor') .'/';    
-    
+  function _code_editor_build_javascript_footer($edit_file_path) {    
     $language_config = array(
-      '#\.(php|inc|module|install|info)$#' => array(
+      '#\.(php|inc|module|install|info|test)$#' => array(
         'parsefile' => array(
           'parsexml.js', 
           'parsecss.js', 
@@ -225,6 +223,8 @@
           'code_editor.css')
       )
     );
+    
+    $module_path = '/' . drupal_get_path('module', 'code_editor') .'/';        
     
     $js_footer[] = '<script src="' . $module_path . 'codemirror/js/codemirror.js" type="text/javascript"></script>';
     $js_footer[] = '<script type="text/javascript">';
