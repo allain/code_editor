@@ -1,4 +1,5 @@
-<?php
+<?php  
+  // $Id$
   
   define('EDIT_CODE_PATH', 'admin/build/edit-code');
   
@@ -39,7 +40,8 @@
         drupal_get_form('code_editor_create_file_form') .
         drupal_get_form('code_editor_create_directory_form') .
         $listing;
-    } else {
+    }
+    else {
       drupal_set_title(basename($edit_file_path));
       
       $content = file_get_contents($edit_file_path);
@@ -78,21 +80,21 @@
     $new_code = $form_state['values']['code'];
     
     if (!file_exists($edit_file_path)) {
-      drupal_set_message('Unable to save changes: <strong>file is missing</strong>.', 'error');
+      drupal_set_message(t('Unable to save changes: <strong>file is missing</strong>.'), 'error');
       return;
     }
     
     if (!is_writable($edit_file_path)) {
-      drupal_set_message('Unable to save changes: <strong>file is read only.</strong>', 'error');
+      drupal_set_message(t('Unable to save changes: <strong>file is read only.</strong>'), 'error');
       return;
     }
     
     if (file_put_contents($edit_file_path, $new_code) === FALSE) {
-      drupal_set_message('An error occured while writing to the file.', 'error');
+      drupal_set_message(t('An error occured while writing to the file.'), 'error');
       return;
     }
     
-    drupal_set_message('Saved Changes');  
+    drupal_set_message(t('Saved Changes'));  
   }
   
   function code_editor_create_file_form() {
@@ -126,7 +128,8 @@
     
     if (file_put_contents("$requested_path/$filename", '') === FALSE) {
       form_set_error('', t('Could not create file'));      
-    } else {
+    }
+    else {
       drupal_set_message(t('File created.'));
     }
   }
@@ -163,7 +166,8 @@
     mkdir("$requested_path/$filename");
     if (!file_exists("$requested_path/$filename")) {
       form_set_error('', t('Could not create directory'));      
-    } else {
+    }
+    else {
       drupal_set_message(t('Directory created.'));
     }
   }
@@ -171,16 +175,16 @@
   function _code_editor_requested_file_path() {
     $request_uri = request_uri();
     if (preg_match('#^/(en|fr)/#', $request_uri)) {
-      $request_uri = substr($request_uri, 3);
+      $request_uri = drupal_substr($request_uri, 3);
     }
     
     if (strpos($request_uri, '/' . EDIT_CODE_PATH) !== 0) {
-      return null;
+      return NULL;
     }
     
-    $request_uri = substr($request_uri, strlen(EDIT_CODE_PATH) + 1);
+    $request_uri = drupal_substr($request_uri, drupal_strlen(EDIT_CODE_PATH) + 1);
     if (strpos($request_uri, '?') !== FALSE) {
-      $request_uri = substr($request_uri, 0, strpos($request_uri, '?')); 
+      $request_uri = drupal_substr($request_uri, 0, strpos($request_uri, '?')); 
     }
     
     $edit_file_path = './' . $request_uri;  
@@ -259,8 +263,9 @@
       if ($index == 0) {
         echo l('ROOT', EDIT_CODE_PATH);
         echo '/';
-      } elseif ($part) {
-        $cumulative_path .= $part. '/';
+      } 
+      elseif ($part) {
+        $cumulative_path .= $part . '/';
         echo l($part, $cumulative_path);
         echo '/';
       }
@@ -272,16 +277,17 @@
   }
   
   function _code_editor_render_directory_listing($directory_path) {
-    if (substr($directory_path, './') === FALSE) {
+    if (strpos($directory_path, './') === FALSE) {
       return 'invalid directory'; 
     }        
     
-    $url_path = url(EDIT_CODE_PATH. substr($directory_path, 2));
+    $url_path = url(EDIT_CODE_PATH . drupal_substr($directory_path, 2));
     $url_path = rtrim($url_path, '/');
     if ($directory_path === './') {
       $parent_url_path = FALSE;
-    } else {
-      $parent_url_path = url(EDIT_CODE_PATH. dirname(substr($directory_path, 2)));
+    }
+    else {
+      $parent_url_path = url(EDIT_CODE_PATH . dirname(drupal_substr($directory_path, 2)));
     }
     
     ob_start();?>    
@@ -306,7 +312,8 @@
         echo "<td class='path'><a href='$url_path/$file'><strong>$file</strong></a></td>";   
         echo "<td class='mtime'>&nbsp;</td>";                
         echo '</tr>';
-      } else {
+      }
+      else {
         echo '<tr class="file">';        
         echo "<td class='path'><a href='$url_path/$file' target='_blank'>$file</a></td>"; 
         echo "<td class='mtime'>" . date('Y-m-d H:i:s', filemtime("$directory_path/$file")) . "</td>";        
